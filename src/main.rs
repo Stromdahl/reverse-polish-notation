@@ -19,10 +19,11 @@ fn main() -> std::io::Result<()> {
         if input == "quit" {
             break 'a;
         }
-
         let mut tokens = tokenizer::tokenize(&input).unwrap();
-        let result = evaluater::evaluate(&mut tokens).unwrap();
-        print_result(result);
+        match evaluater::evaluate(&mut tokens) {
+            Ok(result) => print_result(result),
+            Err(err) => println!("{}", err),
+        };
     }
     Ok(())
 }
