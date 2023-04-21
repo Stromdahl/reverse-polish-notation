@@ -1,9 +1,9 @@
+mod tokens;
+mod tokenizer;
+mod evaluater;
 use std::io::Write;
 
-use crate::token::{evaluate, tokenize, ValueToken};
-mod token;
-
-fn print_result(result: Vec<ValueToken>) {
+fn print_result(result: Vec<tokens::ValueToken>) {
     for value in result {
         print!("{} ", value);
     }
@@ -12,7 +12,6 @@ fn print_result(result: Vec<ValueToken>) {
 
 fn main() -> std::io::Result<()> {
     'a: loop {
-        print!("> ");
         let _ = std::io::stdout().flush();
         let mut input = String::new();
         let stdin = std::io::stdin();
@@ -21,8 +20,8 @@ fn main() -> std::io::Result<()> {
             break 'a;
         }
 
-        let mut tokens = tokenize(&input).unwrap();
-        let result = evaluate(&mut tokens).unwrap();
+        let mut tokens = tokenizer::tokenize(&input).unwrap();
+        let result = evaluater::evaluate(&mut tokens).unwrap();
         print_result(result);
     }
     Ok(())
