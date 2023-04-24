@@ -1,28 +1,31 @@
 use crate::tokens::Token;
 
+fn try_pop_operators(stack: &mut Vec<i32>) -> Result<(i32, i32), &'static str> {
+    Ok((
+        stack.pop().ok_or("Syntax Error")?,
+        stack.pop().ok_or("Syntax Error")?,
+    ))
+}
+
 pub fn evaluate(program: Vec<Token>) -> Result<Vec<i32>, &'static str> {
     let mut stack: Vec<i32> = Vec::new();
     for token in program {
         match token {
             Token::Push(x) => stack.push(x),
             Token::Add => {
-                let right = stack.pop().ok_or("Syntax Error")?;
-                let left = stack.pop().ok_or("Syntax Error")?;
+                let (right, left) = try_pop_operators(&mut stack)?;
                 stack.push(left + right);
             }
             Token::Sub => {
-                let right = stack.pop().ok_or("Syntax Error")?;
-                let left = stack.pop().ok_or("Syntax Error")?;
+                let (right, left) = try_pop_operators(&mut stack)?;
                 stack.push(left - right);
             }
             Token::Mul => {
-                let right = stack.pop().ok_or("Syntax Error")?;
-                let left = stack.pop().ok_or("Syntax Error")?;
+                let (right, left) = try_pop_operators(&mut stack)?;
                 stack.push(left * right);
             }
             Token::Div => {
-                let right = stack.pop().ok_or("Syntax Error")?;
-                let left = stack.pop().ok_or("Syntax Error")?;
+                let (right, left) = try_pop_operators(&mut stack)?;
                 stack.push(left / right);
             }
         }
