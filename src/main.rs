@@ -1,4 +1,5 @@
 mod evaluater;
+mod tokenizer;
 mod tokens;
 
 use crate::evaluater::evaluate;
