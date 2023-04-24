@@ -6,8 +6,15 @@ use crate::evaluater::evaluate;
 use crate::tokens::Token;
 
 fn main() {
-    let source = "2 3 4 ** ";
-    let program: Vec<Token> = tokenizer::tokenize(source).unwrap();
-    let result = evaluate(program).unwrap();
-    println!("{:?}", result);
+    let stdin = std::io::stdin();
+    loop {
+        let mut input = String::new();
+        stdin.read_line(&mut input).unwrap();
+        if input.trim() == "quit" {
+            break;
+        }
+        let program: Vec<Token> = tokenizer::tokenize(input.trim()).unwrap();
+        let result = evaluate(program);
+        println!("{:?}", result);
+    }
 }
