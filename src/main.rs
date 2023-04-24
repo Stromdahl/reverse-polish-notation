@@ -1,29 +1,12 @@
-mod tokens;
-mod tokenizer;
 mod evaluater;
-use std::io::Write;
+mod tokens;
 
-fn print_result(result: Vec<tokens::ValueToken>) {
-    for value in result {
-        print!("{} ", value);
-    }
-    println!();
-}
+use crate::evaluater::evaluate;
+use crate::tokens::Token;
 
-fn main() -> std::io::Result<()> {
-    'a: loop {
-        let _ = std::io::stdout().flush();
-        let mut input = String::new();
-        let stdin = std::io::stdin();
-        stdin.read_line(&mut input)?;
-        if input == "quit" {
-            break 'a;
-        }
-        let mut tokens = tokenizer::tokenize(&input).unwrap();
-        match evaluater::evaluate(&mut tokens) {
-            Ok(result) => print_result(result),
-            Err(err) => println!("{}", err),
-        };
-    }
-    Ok(())
+fn main() {
+    let x = 4;
+    let y = 3;
+    let program: Vec<Token> = vec![Token::Push(x), Token::Push(y), Token::Add];
+    assert_eq!(vec![x + y], evaluate(program).unwrap());
 }
