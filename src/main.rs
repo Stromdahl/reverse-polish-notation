@@ -2,10 +2,12 @@ mod evaluater;
 mod tokenizer;
 mod tokens;
 
-use crate::evaluater::evaluate;
+use crate::evaluater::VirtualMachine;
 use crate::tokens::Token;
 
 fn main() {
+    let mut vm: VirtualMachine = VirtualMachine::new();
+
     let stdin = std::io::stdin();
     loop {
         let mut input = String::new();
@@ -14,7 +16,13 @@ fn main() {
             break;
         }
         let program: Vec<Token> = tokenizer::tokenize(input.trim()).unwrap();
-        let result = evaluate(program);
-        println!("{:?}", result);
+        match vm.evaluate(program) {
+            Ok(..) => {
+                println!("{:?}", vm.stack);
+            }
+            Err(error) => {
+                println!("{}", error);
+            }
+        }
     }
 }
