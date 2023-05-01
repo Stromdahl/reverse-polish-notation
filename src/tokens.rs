@@ -1,6 +1,10 @@
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Token {
+#[derive(Debug, PartialEq)]
+pub enum Token<'a> {
     Push(i32),
+    Pop,
+
+    Load(&'a str),
+    Store(&'a str),
 
     // Binary operators
     Add,
@@ -8,3 +12,5 @@ pub enum Token {
     Mul,
     Div,
 }
+
+

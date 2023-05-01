@@ -7,7 +7,6 @@ use crate::tokens::Token;
 
 fn main() {
     let mut vm: VirtualMachine = VirtualMachine::new();
-
     let stdin = std::io::stdin();
     loop {
         let mut input = String::new();
@@ -15,7 +14,8 @@ fn main() {
         if input.trim() == "quit" {
             break;
         }
-        let program: Vec<Token> = tokenizer::tokenize(input.trim()).unwrap();
+        let source = input.trim().to_string();
+        let program: Vec<Token> = tokenizer::Lexer::new(&source).collect();
         match vm.evaluate(program) {
             Ok(..) => {
                 println!("{:?}", vm.stack);
