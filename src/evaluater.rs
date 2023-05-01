@@ -1,84 +1,169 @@
-use crate::tokens;
+use crate::tokens::Token;
+use std::collections::HashMap;
 
-pub fn perform_operation(
-    operator: tokens::Operator,
-    stack: &mut Vec<tokens::ValueToken>,
-) -> Result<(), &'static str> {
-    let left = match stack.pop() {
-        Some(value) => value.0,
-        None => return Err("Syntax error"),
-    };
-    let right = match stack.pop() {
-        Some(value) => value.0,
-        None => return Err("Syntax error"),
-    };
-
-    let result = match operator {
-        tokens::Operator::Add => right + left,
-        tokens::Operator::Sub => right - left,
-        tokens::Operator::Mult => right * left,
-        tokens::Operator::Div => right / left,
-    };
-    stack.push(tokens::ValueToken(result));
-    Ok(())
+pub struct VirtualMachine {
+    pub stack: Vec<i32>,
+    variables: HashMap<String, i32>,
 }
 
-pub fn evaluate(tokens: &mut Vec<tokens::Token>) -> Result<Vec<tokens::ValueToken>, &'static str> {
-    let mut stack: Vec<tokens::ValueToken> = Vec::new();
-    while let Some(token) = tokens.pop() {
-        match token {
-            tokens::Token::Operator(operator) => {
-                perform_operation(operator.0, &mut stack)?;
-            }
-            tokens::Token::Value(value) => {
-                stack.push(value);
-            }
+fn try_pop_stack(stack: &mut Vec<i32>) -> Result<i32, &'static str> {
+    Ok(stack.pop().ok_or("Syntax Error")?)
+}
+
+fn try_pop_operators(stack: &mut Vec<i32>) -> Result<(i32, i32), &'static str> {
+    Ok((try_pop_stack(stack)?, try_pop_stack(stack)?))
+}
+
+impl VirtualMachine {
+    pub fn new() -> Self {
+        Self {
+            stack: vec![],
+            variables: HashMap::new(),
         }
     }
-    Ok(stack)
+
+    pub fn evaluate(&mut self, program: Vec<Token>) -> Result<(), &'static str> {
+        for token in program {
+            match token {
+                Token::Push(x) => self.stack.push(x),
+                Token::Pop => {self.stack.pop();},
+                Token::Add => {
+                    let (right, left) = try_pop_operators(&mut self.stack)?;
+                    self.stack.push(left + right);
+                }
+                Token::Sub => {
+                    let (right, left) = try_pop_operators(&mut self.stack)?;
+                    self.stack.push(left - right);
+                }
+                Token::Mul => {
+                    let (right, left) = try_pop_operators(&mut self.stack)?;
+                    self.stack.push(left * right);
+                }
+                Token::Div => {
+                    let (right, left) = try_pop_operators(&mut self.stack)?;
+                    self.stack.push(left / right);
+                }
+                Token::Load(name) => {
+                    let value = match self.variables.get(name) {
+                        Some(value) => value,
+                        None => &0,
+                    };
+                    self.stack.push(*value);
+                }
+                Token::Store(name) => {
+                    let value = try_pop_stack(&mut self.stack)?;
+                    self.variables.insert(name.to_string(), value);
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tokenizer::tokenize;
+
     #[test]
-    fn test_evaluate_add() {
-        let source = "5 5 +";
-        let mut tokens = tokenize(source).unwrap();
-        let expected = vec![tokens::ValueToken(10)];
-        assert_eq!(evaluate(&mut tokens), Ok(expected));
+    fn test_evaluate_add_variable_to_variable() {
+        let key = "x";
+        let program: Vec<Token> = vec![
+            Token::Push(13),
+            Token::Store(key),
+            Token::Load(key),
+            Token::Load(key),
+            Token::Add,
+        ];
+        let mut vm: VirtualMachine = VirtualMachine::new();
+        vm.evaluate(program).unwrap();
+        assert_eq!(vm.stack.pop().unwrap(), 26);
+    }
+
+    #[test]
+    fn test_evaluate_add_variable_to_literal() {
+        let key = "x";
+        let program: Vec<Token> = vec![
+            Token::Push(13),
+            Token::Store(key),
+            Token::Load(key),
+            Token::Push(7),
+            Token::Add,
+        ];
+        let mut vm: VirtualMachine = VirtualMachine::new();
+        vm.evaluate(program).unwrap();
+        assert_eq!(vm.stack.pop().unwrap(), 20);
+    }
+
+    #[test]
+    fn test_evaluate_assign() {
+        let key = "x";
+        let program: Vec<Token> = vec![
+            Token::Push(13),
+            Token::Store(key),
+        ];
+        let mut vm: VirtualMachine = VirtualMachine::new();
+        vm.evaluate(program).unwrap();
+        assert_eq!( *vm.variables.get(&key.to_string()).unwrap(), 13);
+    }
+
+    #[test]
+    fn test_evaluate_variable() {
+        let key = "x";
+        let program: Vec<Token> = vec![Token::Load(key)];
+        let mut vm: VirtualMachine = VirtualMachine::new();
+        vm.evaluate(program).unwrap();
+        assert_eq!(vm.stack.pop().unwrap(), 0);
+    }
+
+    #[test]
+    fn test_evaluate_pop() {
+        let program: Vec<Token> = vec![Token::Push(5), Token::Push(4), Token::Pop];
+        let mut vm: VirtualMachine = VirtualMachine::new();
+        vm.evaluate(program).unwrap();
+        assert_eq!(vec![5], vm.stack);
+    }
+
+    #[test]
+    fn test_evaluate() {
+        let x = 4;
+        let y = 3;
+        let program: Vec<Token> = vec![Token::Push(x), Token::Push(y), Token::Add];
+        let mut vm: VirtualMachine = VirtualMachine::new();
+        vm.evaluate(program).unwrap();
+        assert_eq!(vec![x + y], vm.stack);
     }
 
     #[test]
     fn test_evaluate_sub() {
-        let source = "3 4 -";
-        let mut tokens = tokenize(source).unwrap();
-        let expected = vec![tokens::ValueToken(-1)];
-        assert_eq!(evaluate(&mut tokens), Ok(expected));
+        let program: Vec<Token> = vec![Token::Push(3), Token::Push(4), Token::Sub];
+        let expected = vec![-1];
+        let mut vm: VirtualMachine = VirtualMachine::new();
+        vm.evaluate(program).unwrap();
+        assert_eq!(vm.stack, expected);
     }
 
     #[test]
     fn test_evaluate_mult() {
-        let source = "3 4 *";
-        let mut tokens = tokenize(source).unwrap();
-        let expected = vec![tokens::ValueToken(12)];
-        assert_eq!(evaluate(&mut tokens), Ok(expected));
+        let program: Vec<Token> = vec![Token::Push(3), Token::Push(4), Token::Mul];
+        let expected = vec![12];
+        let mut vm: VirtualMachine = VirtualMachine::new();
+        vm.evaluate(program).unwrap();
+        assert_eq!(vm.stack, expected);
     }
 
     #[test]
     fn test_evaluate_div() {
-        let source = "20 5 /";
-        let mut tokens = tokenize(source).unwrap();
-        let expected = vec![tokens::ValueToken(4)];
-        assert_eq!(evaluate(&mut tokens), Ok(expected));
+        let program: Vec<Token> = vec![Token::Push(20), Token::Push(5), Token::Div];
+        let expected = vec![4];
+        let mut vm: VirtualMachine = VirtualMachine::new();
+        vm.evaluate(program).unwrap();
+        assert_eq!(vm.stack, expected);
     }
 
     #[test]
-    fn test_evaluate_should_return_syntax_error() {
-        let source = "5 5 ++";
-        let mut tokens = tokenize(source).unwrap();
-        let result = evaluate(&mut tokens);
-        assert_eq!(result, Err("Syntax error"));
+    fn test_evaluate_syntax_error() {
+        let program: Vec<Token> = vec![Token::Push(20), Token::Add];
+        let mut vm: VirtualMachine = VirtualMachine::new();
+        assert_eq!(vm.evaluate(program), Err("Syntax Error"));
     }
 }
