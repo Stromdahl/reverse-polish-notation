@@ -22,6 +22,10 @@ impl VirtualMachine {
         }
     }
 
+    pub fn print_stack(&self) {
+        println!("{:?}", self.stack);
+    }
+
     pub fn evaluate(&mut self, program: Vec<Token>) -> Result<(), &'static str> {
         for token in program {
             match token {

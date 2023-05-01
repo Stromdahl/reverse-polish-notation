@@ -18,7 +18,7 @@ fn main() {
         let program: Vec<Token> = lexer::Lexer::new(&source).collect();
         match vm.evaluate(program) {
             Ok(..) => {
-                println!("{:?}", vm.stack);
+                vm.print_stack();
             }
             Err(error) => {
                 println!("{}", error);
