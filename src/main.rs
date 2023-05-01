@@ -1,5 +1,5 @@
 mod evaluater;
-mod tokenizer;
+mod lexer;
 mod tokens;
 
 use crate::evaluater::VirtualMachine;
@@ -15,7 +15,7 @@ fn main() {
             break;
         }
         let source = input.trim().to_string();
-        let program: Vec<Token> = tokenizer::Lexer::new(&source).collect();
+        let program: Vec<Token> = lexer::Lexer::new(&source).collect();
         match vm.evaluate(program) {
             Ok(..) => {
                 println!("{:?}", vm.stack);
